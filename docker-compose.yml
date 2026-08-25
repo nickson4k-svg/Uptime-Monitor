@@ -1,0 +1,133 @@
+services:
+  # ─── Database ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-uptimemonitor}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-uptimemonitor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Redis (Broker + Channel Layer) ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Web (Django + Daphne ASGI) ───────────────────────────────────────────
+  web:
+    build:
+      context: .
+      target: development
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+
+  # ─── Celery Worker: checks queue ──────────────────────────────────────────
+  worker-checks:
+    build:
+      context: .
+      target: development
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config.celery worker -Q checks -c 8 --loglevel=info -n worker-checks@%h
+
+  # ─── Celery Worker: notifications queue ───────────────────────────────────
+  worker-notifications:
+    build:
+      context: .
+      target: development
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config.celery worker -Q notifications -c 4 --loglevel=info -n worker-notifications@%h
+
+  # ─── Celery Beat (scheduler) ──────────────────────────────────────────────
+  beat:
+    build:
+      context: .
+      target: development
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config.celery beat --scheduler django_celery_beat.schedulers:DatabaseScheduler --loglevel=info
+
+  # ─── Celery Flower (monitoring UI) ────────────────────────────────────────
+  flower:
+    build:
+      context: .
+      target: development
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    volumes:
+      - .:/app
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    command: celery -A config.celery flower --port=5555 --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-admin}
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Create Account — Pet Uptime Monitor{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo-badge">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">Create an account</h1>
+      <p class="auth-subtitle">Start monitoring services with instant health alerts</p>
+    </div>
+
+    <div id="error-msg" class="auth-error"></div>
+
+    <form id="register-form">
+      <div class="form-group">
+        <label class="form-label" for="full-name">Full Name</label>
+        <input class="form-control" id="full-name" type="text" placeholder="Jane Doe" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">Work Email</label>
+        <input class="form-control" id="email" type="email" placeholder="jane@company.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input class="form-control" id="password" type="password" placeholder="••••••••" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password-confirm">Confirm Password</label>
+        <input class="form-control" id="password-confirm" type="password" placeholder="••••••••" required>
+      </div>
+
+      <button class="btn btn-primary" type="submit" id="submit-btn" style="width:100%;margin-top:8px">
+        Create free account
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account? <a href="/login/">Sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  if (API.isLoggedIn()) window.location.href = '/';
+
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const err = document.getElementById('error-msg');
+    btn.textContent = 'Creating account...';
+    btn.disabled = true;
+    err.style.display = 'none';
+
+    try {
+      await API.register(
+        document.getElementById('email').value,
+        document.getElementById('password').value,
+        document.getElementById('password-confirm').value,
+        document.getElementById('full-name').value,
+      );
+      window.location.href = '/';
+    } catch (e) {
+      err.textContent = e.message || 'Registration failed. Please check your details.';
+      err.style.display = 'block';
+      btn.textContent = 'Create free account';
+      btn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}

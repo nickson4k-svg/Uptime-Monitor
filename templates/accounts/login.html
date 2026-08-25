@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Sign In — Pet Uptime Monitor{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo-badge">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-subtitle">Sign in to your real-time telemetry dashboard</p>
+    </div>
+
+    <div id="error-msg" class="auth-error"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label" for="email">Work Email</label>
+        <input class="form-control" id="email" type="email" placeholder="name@company.com" required autofocus>
+      </div>
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label class="form-label" for="password" style="margin-bottom:0">Password</label>
+        </div>
+        <input class="form-control" id="password" type="password" placeholder="••••••••" required>
+      </div>
+
+      <button class="btn btn-primary" type="submit" id="submit-btn" style="width:100%;margin-top:8px">
+        Sign in to account
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="/register/">Sign up</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  if (API.isLoggedIn()) window.location.href = '/';
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const err = document.getElementById('error-msg');
+    btn.textContent = 'Signing in...';
+    btn.disabled = true;
+    err.style.display = 'none';
+
+    try {
+      await API.login(
+        document.getElementById('email').value,
+        document.getElementById('password').value
+      );
+      window.location.href = '/';
+    } catch (e) {
+      err.textContent = e.message || 'Invalid email or password credentials.';
+      err.style.display = 'block';
+      btn.textContent = 'Sign in to account';
+      btn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}

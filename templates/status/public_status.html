@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ monitor_name }} — Service Status</title>
+  <meta name="description" content="Live real-time operational status for {{ monitor_name }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="status-page-layout">
+  <div class="status-page-container">
+    <!-- Header -->
+    <header class="status-page-header">
+      <div class="status-brand">
+        <div class="logo-badge">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <div>
+          <h1 style="font-family:var(--font-display);font-size:1.15rem;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary)">
+            {{ monitor_name }}
+          </h1>
+          <p style="font-size:0.8rem;color:var(--text-secondary)">System Status</p>
+        </div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-muted)">
+        Live Telemetry
+      </div>
+    </header>
+
+    <!-- Overall Status Hero Banner -->
+    <div class="status-hero-banner unknown" id="current-status">
+      <div id="status-icon" class="status-hero-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <div class="status-hero-text" id="status-text">Fetching operational status...</div>
+    </div>
+
+    <!-- 24-Hour Uptime Telemetry -->
+    <div class="status-section">
+      <div class="status-section-header">
+        <div class="status-section-title">Uptime (Last 24 hours)</div>
+        <div class="status-section-meta" id="uptime-pct">—% uptime</div>
+      </div>
+      <div class="uptime-bar-container" id="uptime-bar" style="height:32px;gap:3px"></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-top:8px">
+        <span>24 hours ago</span>
+        <span id="last-checked">Last checked: —</span>
+        <span>Now</span>
+      </div>
+    </div>
+
+    <!-- Active Incidents Section -->
+    <div class="status-section" id="incidents-section" style="display:none">
+      <div class="status-section-header">
+        <div class="status-section-title" style="color:var(--rose)">Active Incidents</div>
+      </div>
+      <div id="incidents-list"></div>
+    </div>
+
+    <!-- Incident History Placeholder -->
+    <div class="status-section">
+      <div class="status-section-header">
+        <div class="status-section-title">Past Incidents</div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted)">No incidents reported in the last 90 days.</p>
+    </div>
+
+    <footer class="status-footer">
+      Powered by <strong>Pet Uptime Monitor</strong> · Catalyst Architecture
+    </footer>
+  </div>
+
+  <script>
+    const API_URL = '{{ api_url }}';
+
+    async function loadStatus() {
+      try {
+        const data = await fetch(API_URL).then(r => r.json());
+        renderStatus(data);
+      } catch (e) {
+        document.getElementById('status-text').textContent = 'Unable to fetch status telemetry.';
+      }
+    }
+
+    function renderStatus(data) {
+      const monitor = data.monitor;
+      const status = monitor.current_status || 'unknown';
+
+      // Current hero status
+      const el = document.getElementById('current-status');
+      el.className = `status-hero-banner ${status}`;
+      
+      const labels = {
+        up: 'All Systems Operational',
+        down: 'Service Degradation Detected',
+        unknown: 'Status Unknown',
+        paused: 'Monitoring Paused'
+      };
+
+      const iconSvg = status === 'up'
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+        : status === 'down'
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+      document.getElementById('status-icon').innerHTML = iconSvg;
+      document.getElementById('status-text').textContent = labels[status] || status;
+
+      // Last checked
+      if (monitor.last_checked_at) {
+        const d = new Date(monitor.last_checked_at);
+        document.getElementById('last-checked').textContent = `Checked: ${d.toLocaleTimeString()}`;
+      }
+
+      // Uptime bar
+      const bar = document.getElementById('uptime-bar');
+      const stats = data.hourly_stats || [];
+      if (stats.length) {
+        const totalUp = stats.reduce((s, h) => s + (h.uptime_pct || 0), 0);
+        const avg = (totalUp / stats.length).toFixed(1);
+        document.getElementById('uptime-pct').textContent = `${avg}% uptime`;
+        bar.innerHTML = stats.map(h => {
+          const pct = parseFloat(h.uptime_pct);
+          const cls = pct >= 99 ? '' : pct >= 90 ? 'partial' : 'down';
+          return `<div class="uptime-segment ${cls}" title="${h.hour}: ${pct || 0}% uptime"></div>`;
+        }).join('');
+      } else {
+        bar.innerHTML = Array(24).fill('<div class="uptime-segment no-data"></div>').join('');
+      }
+
+      // Incidents
+      const incidents = data.open_incidents || [];
+      if (incidents.length) {
+        document.getElementById('incidents-section').style.display = '';
+        document.getElementById('incidents-list').innerHTML = incidents.map(i => `
+          <div class="incident-card">
+            <div class="incident-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>
+              </svg>
+              Service Outage
+            </div>
+            <div class="incident-meta">
+              Triggered: ${new Date(i.started_at).toLocaleString()}
+              ${i.root_cause_message ? ` · Root cause: ${i.root_cause_message}` : ''}
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    loadStatus();
+    setInterval(loadStatus, 60000);
+  </script>
+</body>
+</html>
