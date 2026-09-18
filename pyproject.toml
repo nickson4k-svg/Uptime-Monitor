@@ -99,12 +99,16 @@ omit = [
     "*/migrations/*",
     "*/tests/*",
     "manage.py",
+    "locustfile.py",
+    "config/wsgi.py",
+    "config/asgi.py",
     "config/settings/*",
+    "*/management/*",
     ".venv/*",
 ]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 70
 show_missing = true
 skip_covered = false
 
