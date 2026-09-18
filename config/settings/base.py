@@ -3,6 +3,7 @@ Django settings — Base configuration.
 All environment-specific settings override these in local.py / production.py.
 """
 
+import os
 from pathlib import Path
 
 from decouple import Csv, config
@@ -99,21 +100,71 @@ TEMPLATES = [
 ASGI_APPLICATION = "config.asgi.application"
 WSGI_APPLICATION = "config.wsgi.application"
 
-# ─── Database ─────────────────────────────────────────────────────────────────
-DATABASES = {
-    "default": {
+
+def _parse_db_url(url_str: str) -> dict:
+    from urllib.parse import parse_qs, unquote, urlparse
+
+    parsed = urlparse(url_str)
+    scheme = parsed.scheme.lower()
+    if "sqlite" in scheme:
+        path = parsed.path or parsed.netloc
+        return {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": path,
+        }
+    query_params = parse_qs(parsed.query)
+    options = {}
+    if "sslmode" in query_params:
+        options["sslmode"] = query_params["sslmode"][0]
+    return {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("POSTGRES_DB", default="uptimemonitor"),
-        "USER": config("POSTGRES_USER", default="postgres"),
-        "PASSWORD": config("POSTGRES_PASSWORD", default="postgres"),
-        "HOST": config("POSTGRES_HOST", default="localhost"),
-        "PORT": config("POSTGRES_PORT", default="5432"),
+        "NAME": unquote(parsed.path.lstrip("/")),
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
+        "HOST": parsed.hostname or "",
+        "PORT": str(parsed.port or 5432),
         "CONN_MAX_AGE": 60,
-        "OPTIONS": {
-            "connect_timeout": 10,
-        },
+        "OPTIONS": options,
     }
-}
+
+
+_db_url = config("DATABASE_URL", default=config("POSTGRES_URL", default=""))
+_postgres_host = config("POSTGRES_HOST", default="localhost")
+_is_vercel = bool(os.environ.get("VERCEL"))
+
+if _db_url:
+    DATABASES = {"default": _parse_db_url(_db_url)}
+elif _is_vercel and (
+    "." not in _postgres_host or _postgres_host in ("localhost", "127.0.0.1")
+):
+    import shutil
+
+    _tmp_db = Path("/tmp/db.sqlite3")
+    _seed_db = BASE_DIR / "seed.sqlite3"
+    if not _tmp_db.exists() and _seed_db.exists():
+        shutil.copy2(_seed_db, _tmp_db)
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": _tmp_db if _tmp_db.exists() else _seed_db,
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("POSTGRES_DB", default="uptimemonitor"),
+            "USER": config("POSTGRES_USER", default="postgres"),
+            "PASSWORD": config("POSTGRES_PASSWORD", default="postgres"),
+            "HOST": _postgres_host,
+            "PORT": config("POSTGRES_PORT", default="5432"),
+            "CONN_MAX_AGE": 60,
+            "OPTIONS": {
+                "connect_timeout": 10,
+            },
+        }
+    }
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
 AUTH_USER_MODEL = "accounts.User"
