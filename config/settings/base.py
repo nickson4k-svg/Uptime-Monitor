@@ -138,8 +138,9 @@ elif _is_vercel and (
     "." not in _postgres_host or _postgres_host in ("localhost", "127.0.0.1")
 ):
     import shutil
+    import tempfile
 
-    _tmp_db = Path("/tmp/db.sqlite3")
+    _tmp_db = Path(tempfile.gettempdir()) / "db.sqlite3"
     _seed_db = BASE_DIR / "seed.sqlite3"
     if not _tmp_db.exists() and _seed_db.exists():
         shutil.copy2(_seed_db, _tmp_db)
