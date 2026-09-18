@@ -1,0 +1,23 @@
+# Tests & CI
+tests/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.github/
+
+# Documentation & Load testing
+docs/
+locustfile.py
+README.md
+
+# Containers & Config
+Dockerfile
+docker-compose.yml
+.dockerignore
+.pre-commit-config.yaml
+
+# Local development files
+*.sqlite3
+*.sqlite3-journal
+.venv/

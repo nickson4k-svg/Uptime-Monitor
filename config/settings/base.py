@@ -20,7 +20,6 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost", cast=Csv())
 
 # ─── Application definition ───────────────────────────────────────────────────
 DJANGO_APPS = [
-    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -28,6 +27,13 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
+
+try:
+    import daphne  # noqa: F401
+
+    DJANGO_APPS.insert(0, "daphne")
+except ImportError:
+    pass
 
 THIRD_PARTY_APPS = [
     "rest_framework",
@@ -38,8 +44,14 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
     "channels",
     "django_celery_beat",
-    "django_extensions",
 ]
+
+try:
+    import django_extensions  # noqa: F401
+
+    THIRD_PARTY_APPS.append("django_extensions")
+except ImportError:
+    pass
 
 LOCAL_APPS = [
     "accounts",
