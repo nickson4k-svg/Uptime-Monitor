@@ -7,7 +7,13 @@ from decouple import config
 from .base import *  # noqa: F401, F403
 from .base import MIDDLEWARE
 
-DEBUG = config("DEBUG", default=False, cast=bool)
+DEBUG = config(
+    "DEBUG",
+    default=False,
+    cast=lambda v: str(v).lower() in ("true", "1", "yes")
+    if v and str(v).strip()
+    else False,
+)
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
@@ -20,7 +26,13 @@ if os.environ.get("VERCEL") or not ALLOWED_HOSTS:
 # ─── Security headers & Proxy SSL ─────────────────────────────────────────────
 # In Vercel / serverless reverse proxy, edge handles HTTPS termination
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=False, cast=bool)
+SECURE_SSL_REDIRECT = config(
+    "SECURE_SSL_REDIRECT",
+    default=False,
+    cast=lambda v: str(v).lower() in ("true", "1", "yes")
+    if v and str(v).strip()
+    else False,
+)
 
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True

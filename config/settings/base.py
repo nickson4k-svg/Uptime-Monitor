@@ -11,12 +11,25 @@ from decouple import Csv, config
 # ─── Paths ────────────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+
+def _safe_int(default: int):
+    return lambda v: int(v) if v and str(v).strip() else default
+
+
+def _safe_bool(default: bool):
+    return (
+        lambda v: str(v).lower() in ("true", "1", "yes", "on", "t")
+        if v and str(v).strip()
+        else default
+    )
+
+
 # ─── Security ─────────────────────────────────────────────────────────────────
 SECRET_KEY = config(
     "SECRET_KEY",
     default="django-insecure-build-placeholder-key-for-static-collecting-only",
 )
-DEBUG = config("DEBUG", default=False, cast=bool)
+DEBUG = config("DEBUG", default=False, cast=_safe_bool(False))
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost", cast=Csv())
 
 # ─── Application definition ───────────────────────────────────────────────────
@@ -229,10 +242,12 @@ from datetime import timedelta  # noqa: E402
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=config("JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=15, cast=int)
+        minutes=config(
+            "JWT_ACCESS_TOKEN_LIFETIME_MINUTES", default=15, cast=_safe_int(15)
+        )
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=config("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=7, cast=int)
+        days=config("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=7, cast=_safe_int(7))
     ),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -300,8 +315,8 @@ EMAIL_BACKEND = config(
     default="django.core.mail.backends.console.EmailBackend",
 )
 EMAIL_HOST = config("EMAIL_HOST", default="localhost")
-EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
-EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=_safe_int(587))
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=_safe_bool(True))
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@uptimemonitor.local")
