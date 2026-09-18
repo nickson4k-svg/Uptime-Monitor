@@ -6,7 +6,11 @@ from .base import *  # noqa: F401, F403
 
 DEBUG = False
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=lambda v: [s.strip() for s in v.split(",")])
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default=".vercel.app,localhost,127.0.0.1",
+    cast=lambda v: [s.strip() for s in v.split(",") if s],
+)
 
 # ─── Security headers ─────────────────────────────────────────────────────────
 SECURE_HSTS_SECONDS = 31536000
@@ -20,8 +24,13 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
 # ─── Static files (WhiteNoise) ────────────────────────────────────────────────
-MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware"] + MIDDLEWARE  # type: ignore[name-defined]  # noqa: F405
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+try:
+    import whitenoise  # noqa: F401
+
+    MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware"] + MIDDLEWARE  # type: ignore[name-defined]  # noqa: F405
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+except ImportError:
+    pass
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="", cast=lambda v: [s.strip() for s in v.split(",") if s])
