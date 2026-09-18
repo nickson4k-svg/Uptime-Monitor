@@ -3,6 +3,7 @@ HttpChecker — Strategy implementation for standard HTTP/HTTPS status code chec
 """
 
 import time
+
 import httpx
 
 from checks.checkers.base import BaseChecker, CheckResultData
@@ -101,7 +102,11 @@ class HttpChecker(BaseChecker):
         except (httpx.ConnectError, httpx.NetworkError) as exc:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
             exc_str = str(exc).lower()
-            if "name or service not known" in exc_str or "getaddrinfo failed" in exc_str or "nodename" in exc_str:
+            if (
+                "name or service not known" in exc_str
+                or "getaddrinfo failed" in exc_str
+                or "nodename" in exc_str
+            ):
                 error_type = CheckErrorType.DNS_ERROR
                 msg = "DNS resolution failed"
             elif "ssl" in exc_str or "certificate" in exc_str or "tls" in exc_str:

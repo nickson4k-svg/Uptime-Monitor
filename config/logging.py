@@ -5,6 +5,7 @@ Structured JSON log formatter for production observability.
 import datetime
 import json
 import logging
+
 from config.middleware import get_current_request_id
 
 
@@ -16,11 +17,14 @@ class StructuredJSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_data = {
-            "timestamp": datetime.datetime.fromtimestamp(record.created, tz=datetime.timezone.utc).isoformat(),
+            "timestamp": datetime.datetime.fromtimestamp(
+                record.created, tz=datetime.UTC
+            ).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
-            "request_id": getattr(record, "request_id", None) or get_current_request_id(),
+            "request_id": getattr(record, "request_id", None)
+            or get_current_request_id(),
             "module": record.module,
             "line": record.lineno,
         }

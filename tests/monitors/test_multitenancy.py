@@ -82,6 +82,7 @@ class TestMonitorMultitenancy:
         # Either 400 (validation error) or 201 (but owner is current user)
         if response.status_code == 201:
             from monitors.models import Monitor
+
             m = Monitor.objects.get(pk=response.data["id"])
             assert m.owner != user2, "Owner was hijacked!"
 
@@ -101,7 +102,6 @@ class TestChecksMultitenancy:
 class TestPublicStatusPage:
     def test_public_page_accessible_without_auth(self, api_client, monitor):
         """Public status page requires no authentication."""
-        from monitors.models import Monitor
         monitor.is_public = True
         monitor.save()
 

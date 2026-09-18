@@ -2,11 +2,8 @@
 WebSocket consumer tests using Django Channels test helpers.
 """
 
-import json
-
 import pytest
 from channels.testing import WebsocketCommunicator
-from django.test import override_settings
 
 from config.asgi import application
 
@@ -19,7 +16,9 @@ class TestDashboardConsumer:
         from asgiref.sync import sync_to_async
         from rest_framework_simplejwt.tokens import RefreshToken
 
-        token = await sync_to_async(lambda: str(RefreshToken.for_user(user).access_token))()
+        token = await sync_to_async(
+            lambda: str(RefreshToken.for_user(user).access_token)
+        )()
         communicator = WebsocketCommunicator(
             application,
             f"/ws/dashboard/?token={token}",
@@ -74,7 +73,6 @@ class TestDashboardConsumer:
         Simulate a Celery worker sending a status update via channel layer.
         Consumer should relay it to the WebSocket client.
         """
-        from asgiref.sync import sync_to_async
         from channels.layers import get_channel_layer
 
         communicator, connected, _ = await self._connect_authenticated(user)

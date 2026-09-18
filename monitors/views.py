@@ -40,8 +40,10 @@ class MonitorViewSet(viewsets.ModelViewSet):
         Uses Subquery annotation to eliminate N+1 queries for 24h uptime aggregation.
         """
         from datetime import timedelta
+
         from django.db.models import Avg, FloatField, OuterRef, Subquery
         from django.utils import timezone
+
         from checks.models import HourlyStats
 
         since = timezone.now() - timedelta(hours=24)
@@ -57,7 +59,11 @@ class MonitorViewSet(viewsets.ModelViewSet):
 
         return (
             Monitor.objects.for_user(self.request.user)
-            .annotate(uptime_24h_annotated=Subquery(uptime_subquery, output_field=FloatField()))
+            .annotate(
+                uptime_24h_annotated=Subquery(
+                    uptime_subquery, output_field=FloatField()
+                )
+            )
             .order_by("-created_at")
         )
 
@@ -71,7 +77,10 @@ class MonitorViewSet(viewsets.ModelViewSet):
         """POST /api/v1/monitors/{id}/pause/ — suspend checks without deleting."""
         monitor = self.get_object()
         if not monitor.is_active:
-            return Response({"detail": "Monitor is already paused."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Monitor is already paused."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         monitor.is_active = False
         monitor.current_status = "paused"
         monitor.save(update_fields=["is_active", "current_status"])
@@ -82,11 +91,16 @@ class MonitorViewSet(viewsets.ModelViewSet):
         """POST /api/v1/monitors/{id}/resume/ — resume checks."""
         monitor = self.get_object()
         if monitor.is_active:
-            return Response({"detail": "Monitor is already active."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Monitor is already active."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         monitor.is_active = True
         monitor.current_status = "unknown"
         monitor.consecutive_failures = 0
-        monitor.save(update_fields=["is_active", "current_status", "consecutive_failures"])
+        monitor.save(
+            update_fields=["is_active", "current_status", "consecutive_failures"]
+        )
         return Response({"detail": "Monitor resumed."})
 
     @action(detail=True, methods=["get"])
@@ -109,7 +123,9 @@ class MonitorViewSet(viewsets.ModelViewSet):
 
         if period == "24h":
             since = now - timedelta(hours=24)
-            qs = HourlyStats.objects.filter(monitor=monitor, hour__gte=since).order_by("hour")
+            qs = HourlyStats.objects.filter(monitor=monitor, hour__gte=since).order_by(
+                "hour"
+            )
             data = [
                 {
                     "timestamp": row.hour.isoformat(),
@@ -121,7 +137,9 @@ class MonitorViewSet(viewsets.ModelViewSet):
         elif period in ("7d", "30d"):
             days = 7 if period == "7d" else 30
             since = (now - timedelta(days=days)).date()
-            qs = DailyStats.objects.filter(monitor=monitor, date__gte=since).order_by("date")
+            qs = DailyStats.objects.filter(monitor=monitor, date__gte=since).order_by(
+                "date"
+            )
             data = [
                 {
                     "timestamp": row.date.isoformat(),
@@ -131,6 +149,8 @@ class MonitorViewSet(viewsets.ModelViewSet):
                 for row in qs
             ]
         else:
-            return Response({"error": "Invalid period. Use 24h, 7d, or 30d."}, status=400)
+            return Response(
+                {"error": "Invalid period. Use 24h, 7d, or 30d."}, status=400
+            )
 
         return Response({"monitor_id": monitor.pk, "period": period, "data": data})

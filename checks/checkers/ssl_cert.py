@@ -8,10 +8,10 @@ Design:
 - Triggers alert if days remaining <= ssl_threshold_days.
 """
 
-from datetime import datetime, timezone
 import socket
 import ssl
 import time
+from datetime import UTC, datetime
 from urllib.parse import urlparse
 
 from checks.checkers.base import BaseChecker, CheckResultData
@@ -43,9 +43,11 @@ class SSLCertChecker(BaseChecker):
         context = ssl.create_default_context()
 
         try:
-            with socket.create_connection((hostname, port), timeout=timeout) as sock:
-                with context.wrap_socket(sock, server_hostname=hostname) as ssock:
-                    cert = ssock.getpeercert()
+            with (
+                socket.create_connection((hostname, port), timeout=timeout) as sock,
+                context.wrap_socket(sock, server_hostname=hostname) as ssock,
+            ):
+                cert = ssock.getpeercert()
 
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
 
@@ -60,8 +62,10 @@ class SSLCertChecker(BaseChecker):
 
             # Parse SSL expiration date format (e.g. 'May 15 12:00:00 2027 GMT')
             not_after_str = cert["notAfter"]
-            expire_date = datetime.strptime(not_after_str, "%b %d %H:%M:%S %Y %Z").replace(tzinfo=timezone.utc)
-            now = datetime.now(timezone.utc)
+            expire_date = datetime.strptime(
+                not_after_str, "%b %d %H:%M:%S %Y %Z"
+            ).replace(tzinfo=UTC)
+            now = datetime.now(UTC)
 
             remaining_delta = expire_date - now
             days_left = remaining_delta.days
@@ -100,7 +104,7 @@ class SSLCertChecker(BaseChecker):
                 error_type=CheckErrorType.SSL_ERROR,
                 error_message=f"SSL certificate verification failed: {exc.verify_message}",
             )
-        except (socket.timeout, TimeoutError):
+        except TimeoutError:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
             return CheckResultData(
                 status=CheckStatus.DOWN,

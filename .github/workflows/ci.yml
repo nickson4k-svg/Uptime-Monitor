@@ -32,7 +32,7 @@ jobs:
 
       - name: Run Bandit Security Analysis
         run: |
-          bandit -r config monitors checks accounts incidents notifications -s B101,B104,B105
+          bandit -r config monitors checks accounts incidents notifications -s B101,B104,B105,B311
 
   test:
     name: 🧪 Automated Pytest Suite

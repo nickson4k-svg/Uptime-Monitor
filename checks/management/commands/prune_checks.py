@@ -3,6 +3,7 @@ Django management command to manually or cron-prune raw check results older than
 """
 
 from django.core.management.base import BaseCommand
+
 from checks.tasks import prune_old_checks
 
 
@@ -27,6 +28,10 @@ class Command(BaseCommand):
         days = options["days"]
         batch_size = options["batch_size"]
 
-        self.stdout.write(self.style.NOTICE(f"Pruning check results older than {days} days..."))
+        self.stdout.write(
+            self.style.NOTICE(f"Pruning check results older than {days} days...")
+        )
         count = prune_old_checks(days=days, batch_size=batch_size)
-        self.stdout.write(self.style.SUCCESS(f"Successfully pruned {count} old check records."))
+        self.stdout.write(
+            self.style.SUCCESS(f"Successfully pruned {count} old check records.")
+        )

@@ -60,7 +60,9 @@ class Incident(models.Model):
         db_table = "incidents_incident"
         ordering = ["-started_at"]
         indexes = [
-            models.Index(fields=["monitor", "is_resolved"], name="idx_incident_monitor_resolved"),
+            models.Index(
+                fields=["monitor", "is_resolved"], name="idx_incident_monitor_resolved"
+            ),
             models.Index(fields=["started_at"], name="idx_incident_started"),
         ]
 

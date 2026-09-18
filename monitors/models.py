@@ -114,7 +114,9 @@ class Monitor(models.Model):
         default=MonitorType.HTTP,
         db_index=True,
     )
-    url = models.CharField(max_length=2000, help_text="Target URL or hostname / IP for TCP.")
+    url = models.CharField(
+        max_length=2000, help_text="Target URL or hostname / IP for TCP."
+    )
     method = models.CharField(max_length=10, choices=Method.choices, default=Method.GET)
 
     # Multi-Region & Distributed Probing
@@ -200,9 +202,13 @@ class Monitor(models.Model):
         ordering = ["-created_at"]
         indexes = [
             # Dispatch query: find all active monitors with a given interval
-            models.Index(fields=["interval", "is_active"], name="idx_monitor_interval_active"),
+            models.Index(
+                fields=["interval", "is_active"], name="idx_monitor_interval_active"
+            ),
             # Owner + status — dashboard queries
-            models.Index(fields=["owner", "current_status"], name="idx_monitor_owner_status"),
+            models.Index(
+                fields=["owner", "current_status"], name="idx_monitor_owner_status"
+            ),
         ]
 
     def __str__(self) -> str:
@@ -235,4 +241,3 @@ class Monitor(models.Model):
     @property
     def is_up(self) -> bool:
         return self.current_status == MonitorStatus.UP
-

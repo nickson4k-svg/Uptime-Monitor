@@ -53,7 +53,9 @@ class AlertChannel(models.Model):
         db_table = "notifications_alertchannel"
         ordering = ["name"]
         indexes = [
-            models.Index(fields=["owner", "channel_type"], name="idx_channel_owner_type"),
+            models.Index(
+                fields=["owner", "channel_type"], name="idx_channel_owner_type"
+            ),
         ]
 
     def __str__(self) -> str:

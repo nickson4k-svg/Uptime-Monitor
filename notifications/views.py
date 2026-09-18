@@ -4,12 +4,14 @@ from rest_framework import permissions, serializers, viewsets
 
 from .models import AlertChannel, ChannelType, MonitorAlert
 
-
 # ─── Channel type-specific config validators ──────────────────────────────────
+
 
 def validate_email_config(config: dict) -> None:
     if not config.get("email"):
-        raise serializers.ValidationError({"config": "Email config requires 'email' key."})
+        raise serializers.ValidationError(
+            {"config": "Email config requires 'email' key."}
+        )
 
 
 def validate_telegram_config(config: dict) -> None:
@@ -23,7 +25,9 @@ def validate_slack_config(config: dict) -> None:
     webhook = config.get("webhook_url", "")
     if not webhook.startswith("https://hooks.slack.com/"):
         raise serializers.ValidationError(
-            {"config": "Slack config requires a valid 'webhook_url' starting with https://hooks.slack.com/."}
+            {
+                "config": "Slack config requires a valid 'webhook_url' starting with https://hooks.slack.com/."
+            }
         )
 
 
@@ -39,7 +43,15 @@ class AlertChannelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AlertChannel
-        fields = ["id", "owner", "name", "channel_type", "config", "is_active", "created_at"]
+        fields = [
+            "id",
+            "owner",
+            "name",
+            "channel_type",
+            "config",
+            "is_active",
+            "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
         extra_kwargs = {
             # Sensitive: write-only to avoid leaking tokens in GET responses
@@ -47,7 +59,9 @@ class AlertChannelSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
-        channel_type = attrs.get("channel_type") or (self.instance and self.instance.channel_type)
+        channel_type = attrs.get("channel_type") or (
+            self.instance and self.instance.channel_type
+        )
         config = attrs.get("config") or {}
         validator = CONFIG_VALIDATORS.get(channel_type)
         if validator:

@@ -25,7 +25,9 @@ def custom_exception_handler(exc, context):
     if isinstance(exc, DjangoValidationError):
         from rest_framework.exceptions import ValidationError
 
-        exc = ValidationError(detail=exc.message_dict if hasattr(exc, "message_dict") else exc.messages)
+        exc = ValidationError(
+            detail=exc.message_dict if hasattr(exc, "message_dict") else exc.messages
+        )
 
     response = exception_handler(exc, context)
 

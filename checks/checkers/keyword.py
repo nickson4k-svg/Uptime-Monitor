@@ -9,6 +9,7 @@ Design:
 
 import re
 import time
+
 import httpx
 
 from checks.checkers.base import BaseChecker, CheckResultData
@@ -33,10 +34,17 @@ class KeywordChecker(BaseChecker):
         if not url.startswith(("http://", "https://")):
             url = f"https://{url}"
 
-        timeout_config = httpx.Timeout(connect=float(self.timeout), read=float(self.timeout), write=float(self.timeout), pool=5.0)
+        timeout_config = httpx.Timeout(
+            connect=float(self.timeout),
+            read=float(self.timeout),
+            write=float(self.timeout),
+            pool=5.0,
+        )
 
         try:
-            with httpx.Client(timeout=timeout_config, follow_redirects=True, verify=True) as client:
+            with httpx.Client(
+                timeout=timeout_config, follow_redirects=True, verify=True
+            ) as client:
                 headers = {
                     "User-Agent": "PetUptimeMonitor/1.0 (Keyword-Checker)",
                     **self.request_headers,

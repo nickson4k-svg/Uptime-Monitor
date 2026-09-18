@@ -44,10 +44,14 @@ class PublicStatusAPIView(APIView):
             checked_at__gte=now - timedelta(hours=1),
         ).values("status", "response_time_ms", "http_code", "checked_at")[:20]
 
-        hourly_stats = HourlyStats.objects.filter(
-            monitor=monitor,
-            hour__gte=now - timedelta(hours=24),
-        ).order_by("hour").values("hour", "uptime_pct", "avg_response_time_ms")
+        hourly_stats = (
+            HourlyStats.objects.filter(
+                monitor=monitor,
+                hour__gte=now - timedelta(hours=24),
+            )
+            .order_by("hour")
+            .values("hour", "uptime_pct", "avg_response_time_ms")
+        )
 
         open_incidents = Incident.objects.filter(
             monitor=monitor, is_resolved=False

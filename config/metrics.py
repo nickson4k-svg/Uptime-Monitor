@@ -2,6 +2,9 @@
 Prometheus Metrics instrumentation for Pet-Uptime-Monitor.
 """
 
+import contextlib
+
+from django.http import HttpResponse
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -9,7 +12,6 @@ from prometheus_client import (
     Histogram,
     generate_latest,
 )
-from django.http import HttpResponse
 
 # ── Metrics Definitions ────────────────────────────────────────────────────────
 
@@ -28,19 +30,19 @@ UPTIME_CHECK_DURATION_SECONDS = Histogram(
 
 UPTIME_ACTIVE_INCIDENTS = Gauge(
     "uptime_active_incidents",
-    "Current count of active unresolved incidents",
+    "Total currently open/active incidents",
 )
 
 UPTIME_MONITORS_TOTAL = Gauge(
     "uptime_monitors_total",
-    "Total registered monitors",
+    "Total configured monitors by active state",
     ["is_active"],
 )
 
 
 def update_gauge_metrics():
     """Sync dynamic gauges with database state."""
-    try:
+    with contextlib.suppress(Exception):
         from incidents.models import Incident
         from monitors.models import Monitor
 
@@ -51,8 +53,6 @@ def update_gauge_metrics():
         paused_monitors = Monitor.objects.filter(is_active=False).count()
         UPTIME_MONITORS_TOTAL.labels(is_active="true").set(active_monitors)
         UPTIME_MONITORS_TOTAL.labels(is_active="false").set(paused_monitors)
-    except Exception:
-        pass
 
 
 def metrics_view(request):

@@ -11,13 +11,12 @@ Covers:
 """
 
 import pytest
-from django.utils import timezone
 
 from checks.models import CheckErrorType, CheckStatus
 from checks.services import CheckResultData
 from incidents.models import Incident
 from incidents.services import IncidentService
-from monitors.models import Monitor, MonitorStatus
+from monitors.models import MonitorStatus
 
 
 def make_result(status=CheckStatus.UP, error_type=CheckErrorType.NONE, msg=""):
@@ -52,7 +51,9 @@ class TestIncidentServiceDown:
         monitor.current_status = MonitorStatus.DOWN
         monitor.save()
 
-        result = make_result(status=CheckStatus.DOWN, error_type=CheckErrorType.TIMEOUT, msg="timed out")
+        result = make_result(
+            status=CheckStatus.DOWN, error_type=CheckErrorType.TIMEOUT, msg="timed out"
+        )
         IncidentService.handle_check_result(monitor.pk, result)
 
         monitor.refresh_from_db()

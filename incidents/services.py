@@ -19,7 +19,6 @@ Key design decisions:
 """
 
 import logging
-from contextlib import contextmanager
 
 from django.db import transaction
 
@@ -39,7 +38,9 @@ class IncidentService:
 
     @staticmethod
     @transaction.atomic
-    def handle_check_result(monitor_id: int, result: "CheckResultData", region: str = "eu-central") -> None:
+    def handle_check_result(
+        monitor_id: int, result: "CheckResultData", region: str = "eu-central"
+    ) -> None:
         """
         Process a check result and update Monitor + Incident state.
         Called from check_monitor Celery task after persisting CheckResult.
@@ -47,7 +48,9 @@ class IncidentService:
         try:
             monitor = Monitor.objects.select_for_update(nowait=True).get(pk=monitor_id)
         except Monitor.DoesNotExist:
-            logger.warning("Monitor %s not found — skipping incident handling", monitor_id)
+            logger.warning(
+                "Monitor %s not found — skipping incident handling", monitor_id
+            )
             return
 
         if result.status == CheckStatus.UP:
@@ -62,7 +65,9 @@ class IncidentService:
 
         monitor.consecutive_failures = 0
         monitor.current_status = MonitorStatus.UP
-        monitor.save(update_fields=["consecutive_failures", "current_status", "updated_at"])
+        monitor.save(
+            update_fields=["consecutive_failures", "current_status", "updated_at"]
+        )
 
         if was_down:
             # Resolve any open incidents
@@ -77,8 +82,13 @@ class IncidentService:
                 if not incident.resolved_alert_sent:
                     # Import here to avoid circular import
                     from notifications.tasks import dispatch_incident_notification
+
                     dispatch_incident_notification.delay(incident.pk, event="resolved")
-                    logger.info("Dispatched resolved notification for incident %s (confirmed by %s)", incident.pk, region)
+                    logger.info(
+                        "Dispatched resolved notification for incident %s (confirmed by %s)",
+                        incident.pk,
+                        region,
+                    )
 
     @staticmethod
     def _handle_down(monitor: Monitor, result: "CheckResultData", region: str) -> None:
@@ -93,7 +103,9 @@ class IncidentService:
         for r in configured_regions:
             if r == region:
                 continue
-            last_r_check = monitor.check_results.filter(region=r).order_by("-checked_at").first()
+            last_r_check = (
+                monitor.check_results.filter(region=r).order_by("-checked_at").first()
+            )
             if last_r_check and last_r_check.status == CheckStatus.DOWN:
                 failing_regions.add(r)
 
@@ -112,7 +124,9 @@ class IncidentService:
 
         monitor.consecutive_failures += 1
         monitor.current_status = MonitorStatus.DOWN
-        monitor.save(update_fields=["consecutive_failures", "current_status", "updated_at"])
+        monitor.save(
+            update_fields=["consecutive_failures", "current_status", "updated_at"]
+        )
 
         logger.info(
             "Monitor %s DOWN with quorum [%s] (consecutive_failures=%s, threshold=%s)",
@@ -141,15 +155,20 @@ class IncidentService:
                 root_cause_error=result.error_type,
                 root_cause_message=root_cause,
             )
-            logger.warning("Opened incident %s for monitor %s (Quorum: %s)", incident.pk, monitor.pk, regions_str)
+            logger.warning(
+                "Opened incident %s for monitor %s (Quorum: %s)",
+                incident.pk,
+                monitor.pk,
+                regions_str,
+            )
 
             # Dispatch notification asynchronously
             from notifications.tasks import dispatch_incident_notification
+
             dispatch_incident_notification.delay(incident.pk, event="opened")
 
         elif has_open_incident:
             # Update failure count on existing incident
-            Incident.objects.filter(
-                monitor=monitor, is_resolved=False
-            ).update(failure_count=monitor.consecutive_failures)
-
+            Incident.objects.filter(monitor=monitor, is_resolved=False).update(
+                failure_count=monitor.consecutive_failures
+            )

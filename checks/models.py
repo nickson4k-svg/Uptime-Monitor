@@ -78,9 +78,14 @@ class CheckResult(models.Model):
         ordering = ["-checked_at"]
         indexes = [
             # Primary access pattern: monitor's recent history for graph/stats
-            models.Index(fields=["monitor", "-checked_at"], name="idx_checkresult_monitor_time"),
+            models.Index(
+                fields=["monitor", "-checked_at"], name="idx_checkresult_monitor_time"
+            ),
             # Multi-region access pattern: monitor's recent history per region
-            models.Index(fields=["monitor", "region", "-checked_at"], name="idx_checkresult_mon_reg_time"),
+            models.Index(
+                fields=["monitor", "region", "-checked_at"],
+                name="idx_checkresult_mon_reg_time",
+            ),
             # Aggregation: find all results in a time window
             models.Index(fields=["checked_at"], name="idx_checkresult_time"),
         ]
@@ -115,7 +120,9 @@ class HourlyStats(models.Model):
         db_table = "checks_hourlystats"
         unique_together = [("monitor", "hour")]
         indexes = [
-            models.Index(fields=["monitor", "-hour"], name="idx_hourlystats_monitor_hour"),
+            models.Index(
+                fields=["monitor", "-hour"], name="idx_hourlystats_monitor_hour"
+            ),
         ]
 
     def __str__(self) -> str:
@@ -148,7 +155,9 @@ class DailyStats(models.Model):
         db_table = "checks_dailystats"
         unique_together = [("monitor", "date")]
         indexes = [
-            models.Index(fields=["monitor", "-date"], name="idx_dailystats_monitor_date"),
+            models.Index(
+                fields=["monitor", "-date"], name="idx_dailystats_monitor_date"
+            ),
         ]
 
     def __str__(self) -> str:

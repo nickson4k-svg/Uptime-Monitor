@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
-from monitors.models import Monitor
+
 from checks.tasks import check_monitor
+from monitors.models import Monitor
 
 
 class Command(BaseCommand):
@@ -31,7 +32,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("No active monitors found to check."))
             return
 
-        self.stdout.write(self.style.SUCCESS(f"Running multi-region checks for {monitors.count()} monitor(s)..."))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Running multi-region checks for {monitors.count()} monitor(s)..."
+            )
+        )
         for m in monitors:
             regions_to_check = [forced_region] if forced_region else m.get_regions()
             m_type = m.monitor_type.upper()
@@ -43,9 +48,13 @@ class Command(BaseCommand):
                 if status == "up":
                     code_str = f" - {code} OK" if code else ""
                     self.stdout.write(
-                        self.style.SUCCESS(f"  [UP]   [{m_type}] ({region}) {m.name} ({m.url}){code_str} ({ms}ms)")
+                        self.style.SUCCESS(
+                            f"  [UP]   [{m_type}] ({region}) {m.name} ({m.url}){code_str} ({ms}ms)"
+                        )
                     )
                 else:
                     self.stdout.write(
-                        self.style.ERROR(f"  [DOWN] [{m_type}] ({region}) {m.name} ({m.url}) - Error: {res.get('error_type')}")
+                        self.style.ERROR(
+                            f"  [DOWN] [{m_type}] ({region}) {m.name} ({m.url}) - Error: {res.get('error_type')}"
+                        )
                     )

@@ -2,8 +2,8 @@
 
 import logging
 
-from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import send_mail
 
 from . import NotificationPayload, build_message
 
@@ -29,4 +29,6 @@ def notify(config: dict, payload: NotificationPayload) -> None:
         recipient_list=[recipient],
         fail_silently=False,
     )
-    logger.info("Email notification sent to %s for incident %s", recipient, payload.incident_id)
+    logger.info(
+        "Email notification sent to %s for incident %s", recipient, payload.incident_id
+    )

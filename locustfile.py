@@ -11,6 +11,7 @@ Run with:
 """
 
 import random
+
 from locust import HttpUser, between, task
 
 
@@ -62,7 +63,9 @@ class UptimeMonitorUser(HttpUser):
     @task(10)
     def test_list_monitors(self):
         if self.headers:
-            self.client.get("/api/v1/monitors/", headers=self.headers, name="/api/v1/monitors/")
+            self.client.get(
+                "/api/v1/monitors/", headers=self.headers, name="/api/v1/monitors/"
+            )
 
     @task(2)
     def test_create_and_delete_monitor(self):

@@ -14,9 +14,10 @@ MonitorChecker is a pure service class — no DB needed.
 All HTTP calls are mocked with respx (httpx mocker).
 """
 
+import httpx
 import pytest
 import respx
-import httpx
+
 from checks.models import CheckErrorType, CheckStatus
 from checks.services import MonitorChecker
 
@@ -101,17 +102,24 @@ class TestMonitorCheckerDown:
 class TestMonitorCheckerTimeout:
     @respx.mock
     def test_connect_timeout_returns_down(self, monitor_data):
-        respx.get("https://example.com").mock(side_effect=httpx.ConnectTimeout("timed out"))
+        respx.get("https://example.com").mock(
+            side_effect=httpx.ConnectTimeout("timed out")
+        )
 
         result = MonitorChecker(monitor_data).run()
 
         assert result.status == CheckStatus.DOWN
         assert result.error_type == CheckErrorType.TIMEOUT
-        assert "timed out" in result.error_message.lower() or "timeout" in result.error_message.lower()
+        assert (
+            "timed out" in result.error_message.lower()
+            or "timeout" in result.error_message.lower()
+        )
 
     @respx.mock
     def test_read_timeout_returns_down(self, monitor_data):
-        respx.get("https://example.com").mock(side_effect=httpx.ReadTimeout("read timed out"))
+        respx.get("https://example.com").mock(
+            side_effect=httpx.ReadTimeout("read timed out")
+        )
 
         result = MonitorChecker(monitor_data).run()
 

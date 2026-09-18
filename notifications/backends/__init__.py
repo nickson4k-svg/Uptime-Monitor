@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class NotificationPayload:
     """Structured data passed to all notification backends."""
-    event: str           # "opened" | "resolved"
+
+    event: str  # "opened" | "resolved"
     monitor_name: str
     monitor_url: str
     monitor_id: int

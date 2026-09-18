@@ -7,6 +7,7 @@ Design:
 - Validates non-HTTP services like Redis, PostgreSQL, MySQL, SMTP, SSH, etc.
 """
 
+import contextlib
 import socket
 import time
 from urllib.parse import urlparse
@@ -65,7 +66,7 @@ class TCPChecker(BaseChecker):
                 error_type=CheckErrorType.NONE,
                 error_message=f"TCP connection established to {hostname}:{port} in {elapsed_ms}ms",
             )
-        except socket.timeout:
+        except TimeoutError:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
             return CheckResultData(
                 status=CheckStatus.DOWN,
@@ -93,7 +94,5 @@ class TCPChecker(BaseChecker):
                 error_message=f"TCP port {port} on {hostname} is closed or unreachable: {str(exc)[:100]}",
             )
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 sock.close()
-            except Exception:
-                pass

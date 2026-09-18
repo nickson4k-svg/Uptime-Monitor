@@ -28,13 +28,13 @@ Scaling note:
   in parallel. Beat CPU/memory stays constant regardless of monitor count.
 """
 
+import contextlib
 import logging
 from datetime import timedelta
 
 from asgiref.sync import async_to_sync
 from celery import group, shared_task
 from channels.layers import get_channel_layer
-from django.db import transaction
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
 
@@ -65,7 +65,12 @@ def dispatch_checks(interval: int) -> None:
         for region in m.get_regions():
             task_signatures.append(check_monitor.s(m.id, region=region))
 
-    logger.info("Dispatching %d regional checks for interval=%ss across %d monitors", len(task_signatures), interval, len(monitors))
+    logger.info(
+        "Dispatching %d regional checks for interval=%ss across %d monitors",
+        len(task_signatures),
+        interval,
+        len(monitors),
+    )
 
     # group() sends all tasks to the broker in a single pipeline operation
     check_group = group(task_signatures)
@@ -91,29 +96,32 @@ def check_monitor(self, monitor_id: int, region: str = "eu-central") -> dict:
     """
     from checks.models import CheckResult
     from checks.services import MonitorChecker
-    from incidents.services import IncidentService
     from monitors.models import Monitor
 
     try:
-        monitor_data = Monitor.objects.filter(pk=monitor_id, is_active=True).values(
-            "id",
-            "monitor_type",
-            "url",
-            "method",
-            "timeout",
-            "expected_status_code",
-            "request_headers",
-            "request_body",
-            "keyword",
-            "keyword_should_exist",
-            "tcp_port",
-            "ssl_threshold_days",
-            "domain_threshold_days",
-            "owner_id",
-            "failure_threshold",
-            "quorum_threshold",
-            "regions",
-        ).first()
+        monitor_data = (
+            Monitor.objects.filter(pk=monitor_id, is_active=True)
+            .values(
+                "id",
+                "monitor_type",
+                "url",
+                "method",
+                "timeout",
+                "expected_status_code",
+                "request_headers",
+                "request_body",
+                "keyword",
+                "keyword_should_exist",
+                "tcp_port",
+                "ssl_threshold_days",
+                "domain_threshold_days",
+                "owner_id",
+                "failure_threshold",
+                "quorum_threshold",
+                "regions",
+            )
+            .first()
+        )
     except Exception:
         logger.exception("Failed to load monitor %s", monitor_id)
         return {"error": "db_error", "monitor_id": monitor_id, "region": region}
@@ -154,14 +162,20 @@ def check_monitor(self, monitor_id: int, region: str = "eu-central") -> dict:
     Monitor.objects.filter(pk=monitor_id).update(last_checked_at=now)
 
     # ── Step 4: Record Prometheus Metrics ─────────────────────────────────────
-    try:
-        from config.metrics import UPTIME_CHECKS_TOTAL, UPTIME_CHECK_DURATION_SECONDS
+    with contextlib.suppress(Exception):
+        from config.metrics import (
+            UPTIME_CHECK_DURATION_SECONDS,
+            UPTIME_CHECKS_TOTAL,
+        )
+
         m_type = monitor_data.get("monitor_type", "http")
-        UPTIME_CHECKS_TOTAL.labels(monitor_type=m_type, region=region, status=result.status).inc()
+        UPTIME_CHECKS_TOTAL.labels(
+            monitor_type=m_type, region=region, status=result.status
+        ).inc()
         if result.response_time_ms is not None:
-            UPTIME_CHECK_DURATION_SECONDS.labels(monitor_type=m_type, region=region).observe(result.response_time_ms / 1000.0)
-    except Exception:
-        pass
+            UPTIME_CHECK_DURATION_SECONDS.labels(
+                monitor_type=m_type, region=region
+            ).observe(result.response_time_ms / 1000.0)
 
     # ── Step 5: Push live event to WebSocket clients ──────────────────────────
     _push_status_event(
@@ -217,11 +231,12 @@ def _push_status_event(
         logger.exception("Failed to push WebSocket event for monitor %s", monitor_id)
 
 
-
 # ─── Aggregation Tasks ────────────────────────────────────────────────────────
 
 
-@shared_task(name="checks.tasks.aggregate_hourly_stats", queue="checks", ignore_result=True)
+@shared_task(
+    name="checks.tasks.aggregate_hourly_stats", queue="checks", ignore_result=True
+)
 def aggregate_hourly_stats() -> None:
     """
     Aggregate CheckResult rows from the previous completed hour into HourlyStats.
@@ -267,7 +282,9 @@ def aggregate_hourly_stats() -> None:
             defaults={
                 "total_checks": aggregated["total"],
                 "up_checks": aggregated["up_count"],
-                "avg_response_time_ms": int(aggregated["avg_rt"]) if aggregated["avg_rt"] else None,
+                "avg_response_time_ms": int(aggregated["avg_rt"])
+                if aggregated["avg_rt"]
+                else None,
                 "uptime_pct": uptime_pct,
             },
         )
@@ -276,7 +293,9 @@ def aggregate_hourly_stats() -> None:
     logger.info("Aggregated hourly stats for %d monitors (hour=%s)", count, hour_start)
 
 
-@shared_task(name="checks.tasks.aggregate_daily_stats", queue="checks", ignore_result=True)
+@shared_task(
+    name="checks.tasks.aggregate_daily_stats", queue="checks", ignore_result=True
+)
 def aggregate_daily_stats() -> None:
     """
     Roll up yesterday's HourlyStats into DailyStats.
@@ -290,17 +309,9 @@ def aggregate_daily_stats() -> None:
     count = 0
 
     for monitor_id in monitor_ids:
-        hourly = HourlyStats.objects.filter(
-            monitor_id=monitor_id,
-            hour__date=yesterday,
-        ).aggregate(
-            total=Count("total_checks"),
-            up=Count("up_checks"),
-            avg_rt=Avg("avg_response_time_ms"),
-        )
-
-        # More accurate: sum from individual hourly rows
+        # Sum from individual hourly rows
         from django.db.models import Sum
+
         hourly_sum = HourlyStats.objects.filter(
             monitor_id=monitor_id,
             hour__date=yesterday,
@@ -319,6 +330,7 @@ def aggregate_daily_stats() -> None:
 
         # Count incidents for that day
         from incidents.models import Incident
+
         incident_count = Incident.objects.filter(
             monitor_id=monitor_id,
             started_at__date=yesterday,
@@ -330,7 +342,9 @@ def aggregate_daily_stats() -> None:
             defaults={
                 "total_checks": total,
                 "up_checks": up,
-                "avg_response_time_ms": int(hourly_sum["avg_rt"]) if hourly_sum["avg_rt"] else None,
+                "avg_response_time_ms": int(hourly_sum["avg_rt"])
+                if hourly_sum["avg_rt"]
+                else None,
                 "uptime_pct": uptime_pct,
                 "incident_count": incident_count,
             },
@@ -354,16 +368,24 @@ def prune_old_checks(days: int = 30, batch_size: int = 5000) -> int:
     while True:
         # Fetch IDs in batches to avoid locking the entire table
         ids_to_delete = list(
-            CheckResult.objects.filter(checked_at__lt=cutoff)
-            .values_list("id", flat=True)[:batch_size]
+            CheckResult.objects.filter(checked_at__lt=cutoff).values_list(
+                "id", flat=True
+            )[:batch_size]
         )
         if not ids_to_delete:
             break
 
         deleted_count, _ = CheckResult.objects.filter(id__in=ids_to_delete).delete()
         total_deleted += deleted_count
-        logger.info("Pruned batch of %d raw check results (total so far: %d)", deleted_count, total_deleted)
+        logger.info(
+            "Pruned batch of %d raw check results (total so far: %d)",
+            deleted_count,
+            total_deleted,
+        )
 
-    logger.info("Pruned a total of %d raw CheckResult records older than %d days", total_deleted, days)
+    logger.info(
+        "Pruned a total of %d raw CheckResult records older than %d days",
+        total_deleted,
+        days,
+    )
     return total_deleted
-

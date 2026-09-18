@@ -10,7 +10,7 @@ Architecture:
 import abc
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 from checks.models import CheckErrorType, CheckStatus
 
@@ -23,8 +23,8 @@ class CheckResultData:
     """
 
     status: str  # CheckStatus.UP or CheckStatus.DOWN
-    response_time_ms: Optional[int]  # None if connection failed entirely
-    http_code: Optional[int]  # None for non-HTTP checks (or if connection failed)
+    response_time_ms: int | None  # None if connection failed entirely
+    http_code: int | None  # None for non-HTTP checks (or if connection failed)
     error_type: str  # CheckErrorType value
     error_message: str
 
@@ -43,7 +43,7 @@ class BaseChecker(abc.ABC):
     Each protocol subclass implements _execute() and handles its specific network probing logic.
     """
 
-    def __init__(self, monitor_data: Dict[str, Any]) -> None:
+    def __init__(self, monitor_data: dict[str, Any]) -> None:
         self.data = monitor_data
         self.url = monitor_data.get("url", "")
         self.timeout = monitor_data.get("timeout", 10)

@@ -11,9 +11,17 @@ class IncidentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Incident
         fields = [
-            "id", "monitor", "started_at", "resolved_at", "is_resolved",
-            "failure_count", "root_cause_error", "root_cause_message",
-            "alert_sent", "resolved_alert_sent", "duration_seconds",
+            "id",
+            "monitor",
+            "started_at",
+            "resolved_at",
+            "is_resolved",
+            "failure_count",
+            "root_cause_error",
+            "root_cause_message",
+            "alert_sent",
+            "resolved_alert_sent",
+            "duration_seconds",
         ]
         read_only_fields = fields
 
@@ -32,7 +40,9 @@ class IncidentListView(generics.ListAPIView):
         from monitors.models import Monitor
 
         monitor_id = self.kwargs["monitor_id"]
-        monitor = Monitor.objects.for_user(self.request.user).filter(pk=monitor_id).first()
+        monitor = (
+            Monitor.objects.for_user(self.request.user).filter(pk=monitor_id).first()
+        )
         if not monitor:
             return Incident.objects.none()
 

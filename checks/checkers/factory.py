@@ -4,7 +4,7 @@ CheckerFactory — Factory & Registry for Strategy Checkers.
 Dispatches monitor checks based on MonitorType.
 """
 
-from typing import Any, Dict, Type
+from typing import Any
 
 from checks.checkers.base import BaseChecker
 from checks.checkers.domain import DomainExpiryChecker
@@ -20,7 +20,7 @@ class CheckerFactory:
     Factory Registry mapping MonitorType -> BaseChecker subclass.
     """
 
-    _registry: Dict[str, Type[BaseChecker]] = {
+    _registry: dict[str, type[BaseChecker]] = {
         MonitorType.HTTP: HttpChecker,
         MonitorType.KEYWORD: KeywordChecker,
         MonitorType.SSL: SSLCertChecker,
@@ -29,7 +29,7 @@ class CheckerFactory:
     }
 
     @classmethod
-    def register(cls, monitor_type: str, checker_cls: Type[BaseChecker]) -> None:
+    def register(cls, monitor_type: str, checker_cls: type[BaseChecker]) -> None:
         """Register a custom protocol checker."""
         cls._registry[monitor_type] = checker_cls
 

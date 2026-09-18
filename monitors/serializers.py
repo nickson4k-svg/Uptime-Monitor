@@ -70,14 +70,16 @@ class MonitorSerializer(serializers.ModelSerializer):
             return float(round(val, 2)) if val is not None else None
 
         from datetime import timedelta
+
         from django.db.models import Avg
         from django.utils import timezone
+
         from checks.models import HourlyStats
 
         since = timezone.now() - timedelta(hours=24)
-        result = HourlyStats.objects.filter(
-            monitor=obj, hour__gte=since
-        ).aggregate(avg=Avg("uptime_pct"))
+        result = HourlyStats.objects.filter(monitor=obj, hour__gte=since).aggregate(
+            avg=Avg("uptime_pct")
+        )
 
         val = result["avg"]
         return float(round(val, 2)) if val is not None else None
@@ -97,7 +99,9 @@ class MonitorSerializer(serializers.ModelSerializer):
         try:
             ip = ipaddress.ip_address(socket.gethostbyname(host))
         except (socket.gaierror, ValueError):
-            raise serializers.ValidationError(f"Cannot resolve hostname: {host}")
+            raise serializers.ValidationError(
+                f"Cannot resolve hostname: {host}"
+            ) from None
 
         if ip.is_private or ip.is_loopback or ip.is_link_local:
             raise serializers.ValidationError(
@@ -107,7 +111,9 @@ class MonitorSerializer(serializers.ModelSerializer):
 
     def validate_timeout(self, value: int) -> int:
         if value < 1 or value > 30:
-            raise serializers.ValidationError("Timeout must be between 1 and 30 seconds.")
+            raise serializers.ValidationError(
+                "Timeout must be between 1 and 30 seconds."
+            )
         return value
 
 
@@ -119,10 +125,20 @@ class MonitorListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Monitor
         fields = [
-            "id", "name", "monitor_type", "url", "method", "interval",
-            "regions", "quorum_threshold",
-            "current_status", "last_checked_at", "is_active", "is_public",
-            "public_slug", "uptime_24h",
+            "id",
+            "name",
+            "monitor_type",
+            "url",
+            "method",
+            "interval",
+            "regions",
+            "quorum_threshold",
+            "current_status",
+            "last_checked_at",
+            "is_active",
+            "is_public",
+            "public_slug",
+            "uptime_24h",
         ]
 
     def get_uptime_24h(self, obj) -> float | None:

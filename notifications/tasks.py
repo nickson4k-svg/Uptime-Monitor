@@ -34,7 +34,9 @@ def dispatch_incident_notification(incident_id: int, event: str) -> None:
     try:
         incident = Incident.objects.select_related("monitor__owner").get(pk=incident_id)
     except Incident.DoesNotExist:
-        logger.error("Incident %s not found — cannot dispatch notification", incident_id)
+        logger.error(
+            "Incident %s not found — cannot dispatch notification", incident_id
+        )
         return
 
     # Find all active channels connected to this monitor
@@ -68,7 +70,9 @@ def dispatch_incident_notification(incident_id: int, event: str) -> None:
     max_retries=3,
     default_retry_delay=30,
 )
-def send_notification(self, alert_channel_id: int, incident_id: int, event: str) -> None:
+def send_notification(
+    self, alert_channel_id: int, incident_id: int, event: str
+) -> None:
     """
     Send one notification to one channel for one incident.
     Retries 3 times with exponential backoff on failure.
@@ -120,11 +124,11 @@ def send_notification(self, alert_channel_id: int, incident_id: int, event: str)
 
     except Exception as exc:
         # Exponential backoff: 30s, 60s, 120s
-        retry_delay = 30 * (2 ** self.request.retries)
+        retry_delay = 30 * (2**self.request.retries)
         logger.warning(
             "Notification failed (attempt %d/3): %s — retrying in %ds",
             self.request.retries + 1,
             exc,
             retry_delay,
         )
-        raise self.retry(exc=exc, countdown=retry_delay)
+        raise self.retry(exc=exc, countdown=retry_delay) from exc

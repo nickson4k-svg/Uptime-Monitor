@@ -3,11 +3,12 @@ Unit tests for Performance Optimizations and Data Retention Pruning.
 """
 
 from datetime import timedelta
+
 import pytest
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from checks.models import CheckErrorType, CheckResult, CheckStatus, HourlyStats
+from checks.models import CheckResult, CheckStatus, HourlyStats
 from checks.tasks import prune_old_checks
 from monitors.models import Monitor
 from monitors.views import MonitorViewSet
@@ -15,10 +16,14 @@ from monitors.views import MonitorViewSet
 
 @pytest.mark.django_db
 class TestQueryOptimizationAndNPlusOne:
-    def test_list_monitors_uses_annotated_subquery_without_n_plus_one(self, user, rf: APIRequestFactory):
+    def test_list_monitors_uses_annotated_subquery_without_n_plus_one(
+        self, user, rf: APIRequestFactory
+    ):
         # Create 5 monitors
         now = timezone.now()
-        hour_start = (now - timedelta(hours=2)).replace(minute=0, second=0, microsecond=0)
+        hour_start = (now - timedelta(hours=2)).replace(
+            minute=0, second=0, microsecond=0
+        )
         for i in range(5):
             m = Monitor.objects.create(
                 owner=user,

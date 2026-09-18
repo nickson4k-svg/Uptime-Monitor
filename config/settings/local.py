@@ -1,5 +1,7 @@
 """Local development settings."""
 
+from decouple import config
+
 from .base import *  # noqa: F401, F403
 from .base import BASE_DIR
 
@@ -41,5 +43,3 @@ if USE_SQLITE:
 
 # ─── Disable strict password validation for dev ──────────────────────────────
 AUTH_PASSWORD_VALIDATORS = []
-
-

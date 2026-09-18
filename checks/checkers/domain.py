@@ -7,9 +7,10 @@ Design:
 - Triggers alert if domain registration expires within domain_threshold_days.
 """
 
-from datetime import datetime, timezone
 import time
+from datetime import UTC, datetime
 from urllib.parse import urlparse
+
 import httpx
 
 from checks.checkers.base import BaseChecker, CheckResultData
@@ -45,7 +46,10 @@ class DomainExpiryChecker(BaseChecker):
             with httpx.Client(timeout=timeout, follow_redirects=True) as client:
                 resp = client.get(
                     rdap_url,
-                    headers={"Accept": "application/rdap+json, application/json", "User-Agent": "PetUptimeMonitor/1.0"},
+                    headers={
+                        "Accept": "application/rdap+json, application/json",
+                        "User-Agent": "PetUptimeMonitor/1.0",
+                    },
                 )
 
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -89,7 +93,7 @@ class DomainExpiryChecker(BaseChecker):
             # Format e.g. 2027-05-15T00:00:00Z
             clean_date_str = expiration_date_str.replace("Z", "+00:00")
             expire_date = datetime.fromisoformat(clean_date_str)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             days_left = (expire_date - now).days
 

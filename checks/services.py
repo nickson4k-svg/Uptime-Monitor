@@ -3,6 +3,7 @@ MonitorChecker service — Facade for Strategy Pattern Checkers.
 """
 
 import logging
+
 from checks.checkers.base import CheckResultData
 from checks.checkers.factory import CheckerFactory
 

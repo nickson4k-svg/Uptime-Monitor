@@ -2,15 +2,27 @@
 Management command to seed rich, realistic demo data for presentations and portfolio showcases.
 """
 
-from datetime import timedelta
 import random
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from checks.models import CheckErrorType, CheckResult, CheckStatus, DailyStats, HourlyStats
+from checks.models import (
+    CheckErrorType,
+    DailyStats,
+    HourlyStats,
+)
 from incidents.models import Incident
-from monitors.models import Interval, Method, Monitor, MonitorStatus, MonitorType, Region
+from monitors.models import (
+    Interval,
+    Method,
+    Monitor,
+    MonitorStatus,
+    MonitorType,
+    Region,
+)
 
 User = get_user_model()
 
@@ -36,7 +48,9 @@ class Command(BaseCommand):
         email = options["email"]
         password = options["password"]
 
-        self.stdout.write(self.style.NOTICE(f"Seeding demo workspace for user: {email}..."))
+        self.stdout.write(
+            self.style.NOTICE(f"Seeding demo workspace for user: {email}...")
+        )
 
         # 1. Create or retrieve demo user
         user, created = User.objects.get_or_create(
@@ -96,7 +110,11 @@ class Command(BaseCommand):
                 "method": Method.GET,
                 "keyword": "Sign In to Your Workspace",
                 "keyword_should_exist": True,
-                "regions": [Region.EU_CENTRAL.value, Region.US_EAST.value, Region.AP_SOUTHEAST.value],
+                "regions": [
+                    Region.EU_CENTRAL.value,
+                    Region.US_EAST.value,
+                    Region.AP_SOUTHEAST.value,
+                ],
                 "quorum_threshold": 2,
                 "interval": Interval.ONE_MINUTE,
                 "status": MonitorStatus.UP,
@@ -160,9 +178,15 @@ class Command(BaseCommand):
         for m, base_rt, status in created_monitors:
             # 24 Hours
             for h in range(24, 0, -1):
-                hour_time = (now - timedelta(hours=h)).replace(minute=0, second=0, microsecond=0)
+                hour_time = (now - timedelta(hours=h)).replace(
+                    minute=0, second=0, microsecond=0
+                )
                 is_currently_down = (status == MonitorStatus.DOWN) and (h <= 2)
-                uptime = 0.0 if is_currently_down else (99.8 if random.random() > 0.9 else 100.0)
+                uptime = (
+                    0.0
+                    if is_currently_down
+                    else (99.8 if random.random() > 0.9 else 100.0)
+                )
                 total = 60
                 up = int((uptime / 100.0) * total)
                 avg_rt = max(1, int(base_rt + random.randint(-5, 15)))
@@ -179,7 +203,11 @@ class Command(BaseCommand):
             # 30 Days
             for d in range(30, 0, -1):
                 day_date = (now - timedelta(days=d)).date()
-                uptime = 100.0 if random.random() > 0.15 else round(random.uniform(98.5, 99.9), 2)
+                uptime = (
+                    100.0
+                    if random.random() > 0.15
+                    else round(random.uniform(98.5, 99.9), 2)
+                )
                 total = 1440
                 up = int((uptime / 100.0) * total)
                 avg_rt = max(1, int(base_rt + random.randint(-4, 10)))

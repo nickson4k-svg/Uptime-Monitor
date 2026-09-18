@@ -4,9 +4,9 @@ Unit tests for Observability: Health probes, Prometheus metrics, Request-ID, and
 
 import json
 import logging
+
 import pytest
 from django.test import RequestFactory
-from django.urls import reverse
 
 from config.health import health_live, health_ready
 from config.logging import StructuredJSONFormatter
@@ -37,7 +37,9 @@ class TestHealthProbes:
 
 @pytest.mark.django_db
 class TestPrometheusMetrics:
-    def test_metrics_endpoint_returns_prometheus_format(self, rf: RequestFactory, monitor):
+    def test_metrics_endpoint_returns_prometheus_format(
+        self, rf: RequestFactory, monitor
+    ):
         request = rf.get("/metrics")
         response = metrics_view(request)
         assert response.status_code == 200
@@ -55,6 +57,7 @@ class TestRequestIDMiddleware:
             assert hasattr(req, "id")
             assert get_current_request_id() == req.id
             from django.http import HttpResponse
+
             return HttpResponse("OK")
 
         middleware = RequestIDMiddleware(dummy_view)
@@ -71,6 +74,7 @@ class TestRequestIDMiddleware:
         def dummy_view(req):
             assert req.id == custom_id
             from django.http import HttpResponse
+
             return HttpResponse("OK")
 
         middleware = RequestIDMiddleware(dummy_view)

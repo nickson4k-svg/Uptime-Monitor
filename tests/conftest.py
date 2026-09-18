@@ -33,6 +33,7 @@ def user2(db):
 @pytest.fixture
 def api_client():
     from rest_framework.test import APIClient
+
     return APIClient()
 
 
@@ -40,6 +41,7 @@ def api_client():
 def auth_client(api_client, user):
     """API client authenticated as user."""
     from rest_framework_simplejwt.tokens import RefreshToken
+
     refresh = RefreshToken.for_user(user)
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
     return api_client
@@ -49,6 +51,7 @@ def auth_client(api_client, user):
 def monitor(db, user):
     """A default monitor owned by user."""
     from monitors.models import Monitor
+
     return Monitor.objects.create(
         owner=user,
         name="Test Monitor",
@@ -64,6 +67,7 @@ def monitor(db, user):
 def monitor2(db, user2):
     """A monitor owned by user2 — for multitenancy tests."""
     from monitors.models import Monitor
+
     return Monitor.objects.create(
         owner=user2,
         name="User2's Monitor",

@@ -11,7 +11,10 @@ from decouple import Csv, config
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # ─── Security ─────────────────────────────────────────────────────────────────
-SECRET_KEY = config("SECRET_KEY", default="django-insecure-build-placeholder-key-for-static-collecting-only")
+SECRET_KEY = config(
+    "SECRET_KEY",
+    default="django-insecure-build-placeholder-key-for-static-collecting-only",
+)
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost", cast=Csv())
 
@@ -104,7 +107,9 @@ DATABASES = {
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -186,7 +191,9 @@ SPECTACULAR_SETTINGS = {
 
 # ─── Celery ───────────────────────────────────────────────────────────────────
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/2")
+CELERY_RESULT_BACKEND = config(
+    "CELERY_RESULT_BACKEND", default="redis://localhost:6379/2"
+)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -214,7 +221,9 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [config("CHANNEL_LAYERS_REDIS_URL", default="redis://localhost:6379/3")],
+            "hosts": [
+                config("CHANNEL_LAYERS_REDIS_URL", default="redis://localhost:6379/3")
+            ],
             "capacity": 1500,
             "expiry": 10,
         },
@@ -270,7 +279,11 @@ LOGGING = {
         "celery": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "checks": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
         "incidents": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
-        "notifications": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "notifications": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
     },
 }
 
@@ -281,8 +294,8 @@ TELEGRAM_BOT_TOKEN = config("TELEGRAM_BOT_TOKEN", default="")
 SENTRY_DSN = config("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
 
     sentry_sdk.init(
@@ -296,4 +309,3 @@ if SENTRY_DSN:
         send_default_pii=False,
         environment=config("ENVIRONMENT", default="production"),
     )
-
