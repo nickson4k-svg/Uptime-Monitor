@@ -25,9 +25,9 @@ def _safe_bool(default: bool):
 
 
 # ─── Security ─────────────────────────────────────────────────────────────────
-SECRET_KEY = config(
-    "SECRET_KEY",
-    default="django-insecure-build-placeholder-key-for-static-collecting-only",
+SECRET_KEY = (
+    config("SECRET_KEY", default="")
+    or "django-insecure-build-placeholder-key-for-static-collecting-only-prod"
 )
 DEBUG = config("DEBUG", default=False, cast=_safe_bool(False))
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost", cast=Csv())
@@ -322,7 +322,10 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@uptimemonitor.local")
 
 # ─── Encrypted fields ─────────────────────────────────────────────────────────
-FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY", default="")
+FIELD_ENCRYPTION_KEY = (
+    config("FIELD_ENCRYPTION_KEY", default="")
+    or "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE="
+)
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 LOG_FORMAT = config("LOG_FORMAT", default="simple")  # "simple", "verbose", or "json"
